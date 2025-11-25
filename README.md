@@ -1,7 +1,3 @@
-Here is a formal research paper based on the project we have built. It is structured according to standard academic conventions (IEEE/Nature style).
-
-***
-
 # Probabilistic Modeling of Human Sperm Morphology Distributions via Quantum Superposition and Interactive 3D Visualization
 
 **Abstract**
