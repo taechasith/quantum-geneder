@@ -1,291 +1,239 @@
-This is the ultimate "Why?" guide. I will break down the code line-by-line, assuming you have zero prior knowledge and want to know the *reason* for everything.
-
-### **Block 1: The Imports (Getting the Tools)**
-
-*Why do we need this block?* Python comes "naked"—it doesn't know how to do science, draw windows, or talk to the internet. We have to borrow tools (modules) from others.
-
-```python
-import sys
-import os
-import io
-import random
-import numpy as np
-import kagglehub
-```
-
-  * `import sys`: **Why?** To control the application window. When you click "X" to close the window, `sys` tells the computer "stop running this program now."
-  * `import os`: **Why?** Python lives in a bubble. `os` allows it to talk to your computer's folders to find where the files are hiding. *(Reference: You used this in `do_many_things_1.py`)*.
-  * `import io`: **Why?** We are generating images. Usually, you save images to a hard drive. `io` lets us save the image to **RAM (memory)** instead, which is instant and doesn't clutter your computer with temporary `.png` files.
-  * `import random`: **Why?** To pick a random file so the result is different every time you run it.
-  * `import numpy as np`: **Why?** Normal Python lists are slow at math. `numpy` is a super-fast math engine used by scientists.
-  * `import kagglehub`: **Why?** The specific tool needed to download the sperm dataset from the Kaggle website.
-
-<!-- end list -->
-
-```python
-from qiskit import QuantumCircuit, transpile
-from qiskit_aer import AerSimulator
-```
-
-  * `from qiskit ...`: **Why?** These are the Quantum pieces. `QuantumCircuit` is the sheet music (the code), and `AerSimulator` is the instrument (the computer) that plays it. `transpile` is a translator that cleans up our code for the simulator.
-
-<!-- end list -->
-
-```python
-from PyQt6.QtWidgets import ...
-from PyQt6.QtGui import ...
-from PyQt6.QtCore import Qt
-import pyqtgraph.opengl as gl 
-from pycirclize import Circos
-import matplotlib.pyplot as plt
-```
-
-  * `PyQt6`: **Why?** This is the "Window Builder." It gives us buttons, labels, and the main window frame.
-  * `pyqtgraph.opengl`: **Why?** The specialized 3D engine. It lets us create that spinning 3D sperm cloud.
-  * `pycirclize`: **Why?** The tool that draws the circular genomic chart.
-  * `matplotlib`: **Why?** `pycirclize` needs this in the background to actually draw the lines and colors.
-
------
-
-### **Block 2: The Backend Class (The Brain)**
-
-*Why a Class?* Instead of having 20 loose variables floating around, we pack them into a single "Box" labeled `SpermQuantumSimulation`. *(Reference: `Python2_session3_Class.ipynb`)*.
-
-```python
-class SpermQuantumSimulation:
-    def __init__(self, dataset_handle="..."):
-        self.dataset_handle = dataset_handle
-        self.path = None
-        self.prob_normal = 0.5 
-        self.prob_abnormal = 0.5
-        self.selected_file = "Unknown"
-```
-
-  * `def __init__`: **Why?** This is the starter button. As soon as you create the object, this runs.
-  * `self.prob_normal = 0.5`: **Why?** We set a default "50/50" chance. If the internet fails and we can't download data, the program won't crash—it will just use these default numbers.
-
-#### **Fetching Data**
-
-```python
-    def fetch_and_process(self):
-        print("--- Initializing Biological Data ---")
-        try:
-            self.path = kagglehub.dataset_download(self.dataset_handle)
-```
-
-  * `try:`: **Why?** This is a safety net. Downloading files is risky (internet might cut out). If it fails, Python jumps to `except` instead of crashing. *(Reference: `Python2_session2_Error_Handling.ipynb`)*.
-
-<!-- end list -->
-
-```python
-            # Find all label files
-            label_files = []
-            for root, _, files in os.walk(self.path):
-                for file in files:
-                    if file.startswith("y_") and file.endswith(".npy"):
-                        label_files.append(os.path.join(root, file))
-```
-
-  * `os.walk`: **Why?** The "Search Dog." The dataset might be inside a folder inside another folder. This command sniffs through *every* folder to find the files.
-  * `if file.startswith("y_")`: **Why?** We only want the *Answer Keys* (labels), not the images. In this dataset, answer keys start with `y_`.
-
-<!-- end list -->
-
-```python
-            if not label_files:
-                raise FileNotFoundError("No 'y_*.npy' files found.")
-```
-
-  * `raise`: **Why?** If we searched everywhere and found nothing, we manually trigger an alarm to tell the system "Something is wrong."
-
-<!-- end list -->
-
-```python
-            # Random selection
-            selected_path = random.choice(label_files)
-            self.selected_file = os.path.basename(selected_path)
-```
-
-  * `random.choice`: **Why?** Pick one file blindly. This ensures variety.
-  * `os.path.basename`: **Why?** The path is long (`C:/Users/You/Downloads/Dataset/y_head.npy`). We just want `y_head.npy` for the title.
-
-<!-- end list -->
-
-```python
-            # Load and Force Binary (0 or 1)
-            raw_labels = np.load(selected_path)
-            labels = (raw_labels > 0).astype(int)
-```
-
-  * `np.load`: **Why?** Opens the data file.
-  * `.astype(int)`: **Why?** **Crucial Line.** Sometimes scientific data is messy (e.g., 0.999 or 255). We force everything to be strictly `0` or `1` so our math is perfect.
-
-#### **Running Physics**
-
-```python
-    def run_simulation(self, shots=2000):
-        p_norm = max(0.0, min(1.0, self.prob_normal))
-```
-
-  * `max(0.0, ...)`: **Why?** Math Safety. You cannot calculate the square root of a negative number. This ensures probability is always between 0% and 100%, even if the data was weird.
-
-<!-- end list -->
-
-```python
-        alpha = np.sqrt(p_norm)
-        theta = 2 * np.arccos(alpha)
-```
-
-  * **Why?** The **Born Rule**. In quantum physics, if you want a 50% probability, you don't set the variable to 50%. You set the "Amplitude" ($\alpha$) to $\sqrt{0.5}$. Then we convert that amplitude into an angle ($\theta$) to turn the dial on the quantum computer.
-
-<!-- end list -->
-
-```python
-        qc = QuantumCircuit(1)
-        qc.ry(theta, 0)
-        qc.measure_all()
-```
-
-  * `ry(theta, 0)`: **Why?** Rotate the Qubit (particle) by the angle we calculated. This puts it in the Superposition state (Normal AND Abnormal at the same time).
-  * `measure_all()`: **Why?** Look at it. The superposition collapses into a single reality (Normal OR Abnormal).
-
-<!-- end list -->
-
-```python
-        simulator = AerSimulator()
-        compiled_qc = transpile(qc, simulator)
-        result = simulator.run(compiled_qc, shots=shots).result()
-        return result.get_counts()
-```
-
-  * `transpile`: **Why?** Translation. We wrote the code in abstract math. `transpile` converts it into instructions the specific simulator understands.
-  * `shots=shots`: **Why?** We run the experiment 2000 times (shots) to get a statistical distribution, not just one random result.
-
------
-
-### **Block 3: The Frontend (The Window)**
-
-*Why Class ModernVisualizer?* This represents the "App Window." It inherits from `QMainWindow`, which is a pre-made empty window provided by PyQt.
-
-```python
-class ModernVisualizer(QMainWindow):
-    def __init__(self, simulation_results, filename, probs):
-        super().__init__()
-```
-
-  * `super().__init__()`: **Why?** `QMainWindow` is a complex house built by other programmers. This line calls their setup code first (turning on the lights/plumbing) before we add our furniture.
-
-#### **Handling Qiskit Quirks**
-
-```python
-        self.count_normal = (
-            simulation_results.get('0', 0) + 
-            simulation_results.get('0x0', 0) + 
-            simulation_results.get(0, 0)
-        )
-```
-
-  * **Why all these `get` calls?** Qiskit is inconsistent. Sometimes it says "0", sometimes "0x0" (hexadecimal), sometimes just the number 0. If we check only one, we might miss the data. We check all 3 variations to be safe.
-
-#### **Building the Layout**
-
-```python
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QHBoxLayout() 
-        central_widget.setLayout(layout)
-```
-
-  * `QHBoxLayout`: **Why?** **H**orizontal **Box**. It's an invisible shelf. Anything we put in here will be arranged side-by-side (Left Panel | Right Panel).
-
-#### **The Left Panel (3D + Stats)**
-
-```python
-        self.gl_view = gl.GLViewWidget()
-        self.gl_view.setCameraPosition(distance=45, elevation=30)
-```
-
-  * `gl_view`: **Why?** The 3D Window.
-  * `setCameraPosition`: **Why?** If we don't set this, the camera starts inside the sperm cloud. We move it back (distance 45) and up (elevation 30) so we can see the whole petri dish.
-
-<!-- end list -->
-
-```python
-        stats_text = (
-            f"<h3 style='color: white;'>QUANTUM ANALYSIS REPORT</h3>"
-            f"<b style='color: #00FFFF; font-size: 14px;'>■ NORMAL (Cyan)</b><br>"
-            ...
-        )
-        stats_label.setTextFormat(Qt.TextFormat.RichText)
-```
-
-  * **Why HTML?** Python strings are just plain text. By using HTML (like websites), we can make the word "NORMAL" turn **Cyan** and "ABNORMAL" turn **Red** directly inside the text box.
-
-#### **The 3D Cloud Logic**
-
-```python
-    def create_gl_cloud(self):
-        pos = np.random.normal(size=(self.total_shots, 3))
-        pos[:, 0] *= 5  # Spread X
-        pos[:, 1] *= 5  # Spread Y
-        pos[:, 2] *= 0.5 # Flatten Z
-```
-
-  * `np.random.normal`: **Why?** Creates a "blob" of points.
-  * `*= 5`: **Why?** The blob is too small. We stretch it out 5x wide.
-  * `*= 0.5`: **Why?** We squash it flat (Z-axis). This makes it look like liquid in a flat petri dish rather than a floating ball.
-
-<!-- end list -->
-
-```python
-        colors = np.zeros((self.total_shots, 4))
-        if self.count_normal > 0:
-            colors[:self.count_normal] = (0, 1, 1, 0.8) # Cyan
-```
-
-  * **Why Manual Coloring?** We have 2000 points. We know 1200 are normal. We paint the first 1200 points Cyan `(0, 1, 1)`. We paint the rest Red.
-  * `np.random.shuffle(pos)`: **Why?** Right now, the left side of the dish is all Cyan and the right is all Red. Shuffling the *positions* mixes them up thoroughly.
-
-#### **The Circular Plot**
-
-```python
-    def create_circlize_plot(self):
-        # ... (Math to calc percentages) ...
-        
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png', ...)
-```
-
-  * `io.BytesIO()`: **Why?** The "Phantom File." `pyCirclize` wants to save to a file. We don't want to create a generic `plot.png` on your desktop. `BytesIO` creates a fake file in RAM. The library saves there, and we read it immediately.
-  * `plt.close(fig)`: **Why?** Matplotlib is a memory hog. If you don't close the figure after saving, your RAM fills up and the computer lags.
-
------
-
-### **Block 4: Execution (The Captain)**
-
-*Refers to: `Python2/module_session/do_many_things_1.py`*
-
-```python
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-```
-
-  * `if __name__ == "__main__":`: **Why?** This prevents the app from launching if you just wanted to import the `SpermQuantumSimulation` class into another script.
-  * `app = QApplication(sys.argv)`: **Why?** You need exactly **one** Application object to manage the entire lifecycle (clicks, window resizing, closing).
-
-<!-- end list -->
-
-```python
-    sim = SpermQuantumSimulation()
-    sim.fetch_and_process()
-    counts = sim.run_simulation(shots=2000)
-    
-    window = ModernVisualizer(...)
-    window.show()
-    
-    sys.exit(app.exec())
-```
-
-  * `window.show()`: **Why?** Windows are invisible by default. You must explicitly tell them to appear.
-  * `app.exec()`: **Why?** The "Infinite Loop." This line pauses the script and waits for you to click things. It only finishes when you close the window.
-  * `sys.exit()`: **Why?** Once the loop finishes, this tells the operating system "We are done, release the memory."
+import sys      # lets us access command-line args and exit the program cleanly
+import os       # used to walk through folders to find dataset files
+import io       # used to store images in memory as if they were files
+import random   # used to randomly choose one label file from many
+import numpy as np  # used for numerical arrays, math, and data processing
+import kagglehub    # used to download the dataset from Kaggle by its handle
+
+# Scientific & Quantum Libraries      
+from qiskit import QuantumCircuit, transpile     # QuantumCircuit builds the quantum logic; transpile adapts it to a backend
+from qiskit_aer import AerSimulator             # AerSimulator runs the quantum circuit on a classical simulator
+
+# Visualization Libraries      
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel  
+# QApplication = main app, QMainWindow = main window frame, QWidget = basic container,
+# QHBoxLayout/QVBoxLayout = layout managers, QLabel = text/image display.
+
+from PyQt6.QtGui import QPixmap, QImage, QFont   # QImage/QPixmap to show images, QFont to style text
+from PyQt6.QtCore import Qt                      # Qt core flags (alignment, text mode, etc.)
+import pyqtgraph.opengl as gl                    # OpenGL 3D plotting for the scatter cloud
+from pycirclize import Circos                    # used to make the circular Normal/Abnormal diagram
+import matplotlib.pyplot as plt                  # plotting backend used by Circos to create a Figure
+
+# --- 1. QUANTUM SIMULATION BACKEND ---      
+class SpermQuantumSimulation:      # class that handles data loading and quantum simulation based on that data
+    def __init__(self, dataset_handle="orvile/mhsma-sperm-morphology-analysis-dataset"):      
+        # __init__ runs when we create SpermQuantumSimulation(); sets default state
+        self.dataset_handle = dataset_handle     # remember which Kaggle dataset to download
+        self.path = None                         # will later store local path to downloaded dataset
+        self.prob_normal = 0.5                   # default P(normal) if dataset fails
+        self.prob_abnormal = 0.5                 # default P(abnormal) if dataset fails
+        self.selected_file = "Unknown"           # placeholder to show which label file was used
+
+    def fetch_and_process(self):      # method to download data, find labels, and compute probabilities
+        print("--- Initializing Biological Data ---")  # console log so user knows what's happening
+        try:      
+            self.path = kagglehub.dataset_download(self.dataset_handle)  # download dataset and get its local folder path
+                  
+            # Find all label files      
+            label_files = []                     # list to collect all label file paths
+            for root, _, files in os.walk(self.path):   # walk through all subdirectories in the dataset folder
+                for file in files:      
+                    if file.startswith("y_") and file.endswith(".npy"):  # filter only y_*.npy label files
+                        label_files.append(os.path.join(root, file))     # add full path to list
+                  
+            if not label_files:                             # if we found no matching label files
+                raise FileNotFoundError("No 'y_*.npy' files found.")  # explicitly fail so we go to except
+
+            # Random selection      
+            selected_path = random.choice(label_files)   # pick one label file at random for this run      
+            self.selected_file = os.path.basename(selected_path)  # keep only the filename for display
+                  
+            # Load and Force Binary (0 or 1)      
+            raw_labels = np.load(selected_path)          # load label array from disk      
+            labels = (raw_labels > 0).astype(int)        # convert any positive value to 1, others to 0 (binary labels)
+                  
+            total = len(labels)                          # total number of samples in this file
+            abnormal = np.sum(labels)                    # since labels are 0/1, sum = count of abnormal (1)
+            self.prob_normal = (total - abnormal) / total  # biological probability of normal
+            self.prob_abnormal = abnormal / total          # biological probability of abnormal
+                  
+            print(f"File: {self.selected_file}")         # show which file was used
+            print(f"Bio-Probs: Normal={self.prob_normal:.2%}, Abnormal={self.prob_abnormal:.2%}")  # show computed probabilities
+      
+        except Exception as e:      # any error in download/processing comes here
+            print(f"Data Error: {e}. Using default 50/50.")  # tell user and keep default 0.5/0.5
+
+    def run_simulation(self, shots=2000):      # method to run quantum circuit based on computed probabilities
+        # Prevent math domain errors      
+        p_norm = max(0.0, min(1.0, self.prob_normal))   # ensure probability stays in [0,1] before sqrt/arccos
+              
+        alpha = np.sqrt(p_norm)                         # amplitude for |0> (normal) in quantum state
+        theta = 2 * np.arccos(alpha)                    # rotation angle that encodes this probability via Ry gate
+              
+        qc = QuantumCircuit(1)                          # create a circuit with 1 qubit
+        qc.ry(theta, 0)                                 # rotate qubit 0 around Y-axis by theta (encodes p_norm)
+        qc.measure_all()                                # add measurement so we can get classical results
+      
+        simulator = AerSimulator()                      # choose AerSimulator as backend
+        compiled_qc = transpile(qc, simulator)          # compile the circuit into a form optimized for this simulator
+        result = simulator.run(compiled_qc, shots=shots).result()  # run the circuit many times and get result object
+        return result.get_counts()                      # return dict like {'0': count, '1': count}
+      
+      
+# --- 2. ADVANCED VISUALIZATION FRONTEND ---      
+class ModernVisualizer(QMainWindow):      # main GUI window that shows 3D cloud + stats + circular diagram
+    def __init__(self, simulation_results, filename, probs):      
+        # __init__ sets up the window layout and visual elements
+        super().__init__()      
+        self.setWindowTitle(f"Quantum Sperm Genomics - {filename}")  # set window title including dataset file
+        self.resize(1200, 700)                                       # set initial window size
+        self.setStyleSheet("background-color: #1e1e1e; color: white;")  # global dark theme for the window
+      
+        # Data Parsing      
+        self.total_shots = sum(simulation_results.values())  # total number of simulated measurements
+        self.count_normal = (      
+            simulation_results.get('0', 0) +        # count normal outcomes from string key '0'
+            simulation_results.get('0x0', 0) +      # add weird variant key '0x0' if present
+            simulation_results.get(0, 0)            # add numeric key 0 if present
+        )      
+        self.count_abnormal = self.total_shots - self.count_normal  # remaining shots treated as abnormal
+        self.probs = probs                                          # store biological probabilities (normal, abnormal)
+        self.filename = filename                                    # store dataset file name for display
+      
+        # --- Layout ---      
+        central_widget = QWidget()                     # central content container for the main window
+        self.setCentralWidget(central_widget)          # register it as the main central widget
+        layout = QHBoxLayout()                         # layout that arranges widgets horizontally (left/right)
+        central_widget.setLayout(layout)               # apply that layout to the central widget
+      
+        # --- LEFT PANEL: 3D View + Stats ---      
+        left_panel = QWidget()                         # container for left side: 3D + stats
+        left_layout = QVBoxLayout()                    # vertical layout for stacking 3D view on top of stats
+        left_panel.setLayout(left_layout)              # attach vertical layout to the left panel
+              
+        # 1. OpenGL View      
+        self.gl_view = gl.GLViewWidget()               # create a 3D OpenGL view widget
+        self.gl_view.setBackgroundColor('#101010')     # set dark background for the 3D area
+        self.gl_view.setCameraPosition(distance=45, elevation=30)  # set camera distance and angle for better view
+              
+        g = gl.GLGridItem()                            # create a 3D grid reference plane
+        g.setSize(x=40, y=40)                          # set overall grid size
+        g.setSpacing(x=2, y=2)                         # set spacing between grid lines
+        self.gl_view.addItem(g)                        # add the grid to the 3D view
+              
+        self.create_gl_cloud()                         # generate and add the scatter of samples to the 3D scene
+        left_layout.addWidget(self.gl_view, stretch=3) # add 3D view to left panel, taking more vertical space
+      
+        # 2. UPDATED Stats Label      
+        # Calculations      
+        sim_n_pct = (self.count_normal / self.total_shots) * 100   # simulated percentage normal
+        sim_a_pct = (self.count_abnormal / self.total_shots) * 100 # simulated percentage abnormal
+        bio_n_pct = self.probs[0] * 100                            # biological percentage normal
+        bio_a_pct = self.probs[1] * 100                            # biological percentage abnormal
+              
+        # Deviation (Quantum Noise)      
+        diff_n = sim_n_pct - bio_n_pct             # difference between simulated and biological normal %
+      
+        stats_text = (                             # build an HTML string for the stats report
+            f"<h3 style='color: white;'>QUANTUM ANALYSIS REPORT</h3>"      
+            f"<b>Source Dataset:</b> {self.filename}<br>"      
+            f"<b>Total Samples:</b> {self.total_shots}<br>"      
+            f"--------------------------------------------------<br>"      
+                  
+            f"<b style='color: #00FFFF; font-size: 14px;'>■ NORMAL (Cyan)</b><br>"      
+            f"&nbsp;&nbsp;Measured Count: <b>{self.count_normal}</b><br>"      
+            f"&nbsp;&nbsp;Simulated Ratio: {sim_n_pct:.2f}%<br>"      
+            f"&nbsp;&nbsp;Biological Input: {bio_n_pct:.2f}%<br>"      
+            f"&nbsp;&nbsp;<i>Quantum Deviation: {diff_n:+.2f}%</i><br><br>"      
+                  
+            f"<b style='color: #FF4444; font-size: 14px;'>■ ABNORMAL (Red)</b><br>"      
+            f"&nbsp;&nbsp;Measured Count: <b>{self.count_abnormal}</b><br>"      
+            f"&nbsp;&nbsp;Simulated Ratio: {sim_a_pct:.2f}%<br>"      
+            f"&nbsp;&nbsp;Biological Input: {bio_a_pct:.2f}%"      
+        )      
+      
+        stats_label = QLabel(stats_text)              # QLabel to display the HTML stats text
+        stats_label.setFont(QFont("Segoe UI", 10))    # set font family and size
+        stats_label.setStyleSheet("background-color: #252526; padding: 15px; border-top: 2px solid #333;")  
+        # above line: style the stats block with padding and a top border
+
+        stats_label.setTextFormat(Qt.TextFormat.RichText)  # tell QLabel to treat text as HTML, not plain text
+              
+        left_layout.addWidget(stats_label, stretch=1) # place stats under 3D view in left panel
+        layout.addWidget(left_panel, stretch=2)       # add left panel to main horizontal layout (wider side)
+      
+        # --- RIGHT PANEL: Circular Plot ---      
+        self.image_label = QLabel()                   # label to display the circular diagram image
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # center image within the label
+        self.create_circlize_plot()                   # generate circular diagram and set it on image_label
+        layout.addWidget(self.image_label, stretch=1) # add right panel to main layout (narrower side)
+      
+    def create_gl_cloud(self):      # helper to build and add the 3D scatter point cloud
+        """Renders the 3D scatter plot."""      
+        pos = np.random.normal(size=(self.total_shots, 3))  # generate random (x,y,z) positions for each shot
+        pos[:, 0] *= 5        # widen cloud along x-axis
+        pos[:, 1] *= 5        # widen cloud along y-axis
+        pos[:, 2] *= 0.5      # flatten cloud along z-axis
+              
+        colors = np.zeros((self.total_shots, 4))      # RGBA color array for each point, initially all zeros
+              
+        if self.count_normal > 0:      
+            colors[:self.count_normal] = (0, 1, 1, 0.8)  # first normal points in array: cyan
+        if self.count_abnormal > 0:      
+            colors[self.count_normal:] = (1, 0.3, 0.3, 0.8)  # remaining points: red
+      
+        np.random.shuffle(pos)                        # shuffle positions so the cloud looks more mixed visually
+      
+        sp = gl.GLScatterPlotItem(pos=pos, color=colors, size=6, pxMode=True)  
+        # GLScatterPlotItem: 3D points using our positions and colors
+
+        sp.setGLOptions('translucent')                # enable transparency rendering
+        self.gl_view.addItem(sp)                      # add scatter plot to the 3D view
+      
+    def create_circlize_plot(self):      # helper to create the circular Normal/Abnormal diagram
+        """Generates Circular Diagram."""      
+        n_pct = (self.count_normal / self.total_shots) * 100  # normal percentage
+        a_pct = (self.count_abnormal / self.total_shots) * 100  # abnormal percentage
+      
+        sectors = {f"Normal\n{n_pct:.1f}%": n_pct, f"Abnormal\n{a_pct:.1f}%": a_pct}  
+        # sectors dict: label text -> sector size value
+
+        circos = Circos(sectors, space=5)                       # build circular layout with small gaps
+      
+        for sector in circos.sectors:      
+            color = "#00FFFF" if "Normal" in sector.name else "#FF4444"  # choose cyan for Normal, red for Abnormal
+            track1 = sector.add_track((90, 100))               # outer track ring
+            track1.axis(fc=color, alpha=0.6)                   # fill that ring with semi-transparent color
+            track1.text(sector.name, color="white", size=10)   # draw sector label text on ring
+      
+            track2 = sector.add_track((60, 85))                # inner track for decorative bars
+            x = np.linspace(sector.start, sector.end, 40)      # angles for bar positions
+            y = np.random.randint(20, 100, 40)                 # random bar heights (decorative, not data-driven)
+            track2.bar(x, y, color=color, alpha=0.8)           # draw the bars within this sector
+      
+        fig = circos.plotfig()                                 # render Circos diagram to a Matplotlib figure
+        fig.patch.set_facecolor('#1e1e1e')                     # set figure background to dark
+      
+        buf = io.BytesIO()                                     # create in-memory buffer for image bytes
+        fig.savefig(buf, format='png', facecolor='#1e1e1e', dpi=100, bbox_inches='tight')  
+        # save figure as PNG into the buffer
+
+        buf.seek(0)                                            # move buffer cursor back to the start
+        plt.close(fig)                                         # close Matplotlib figure to free memory
+      
+        qimg = QImage.fromData(buf.getvalue())                 # load PNG bytes into a QImage
+        pixmap = QPixmap.fromImage(qimg)                       # convert QImage to a QPixmap for display
+        self.image_label.setPixmap(pixmap)                     # put pixmap into the label on the right panel
+      
+# --- 3. EXECUTION ---      
+if __name__ == "__main__":      # this block runs only when this file is executed directly, not imported
+    app = QApplication(sys.argv)                               # create Qt application with command-line arguments
+    sim = SpermQuantumSimulation()                             # create simulation backend object
+    sim.fetch_and_process()                                    # download dataset and compute bio probabilities
+    counts = sim.run_simulation(shots=2000)                    # run quantum simulation to get measurement counts
+    window = ModernVisualizer(counts, sim.selected_file, (sim.prob_normal, sim.prob_abnormal))  
+    # create GUI window with simulation results and probabilities
+
+    window.show()                                              # show the main window
+    sys.exit(app.exec())                                       # start Qt event loop, exit program when window closes
